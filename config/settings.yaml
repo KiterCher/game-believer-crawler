@@ -1,0 +1,32 @@
+# GameBeliever Crawler 配置文件
+
+# 数据源配置
+sources:
+  prydwen:
+    name: prydwen
+    base_url: https://prydwen.gg/star-rail
+    enabled: true
+    rate_limit: 1.0
+    timeout: 30
+
+  game8:
+    name: game8
+    base_url: https://game8.co/games/Honkai-Star-Rail
+    enabled: true
+    rate_limit: 2.0
+    timeout: 30
+
+# 输出配置
+output_dir: ../GameBeliever-web/src/data
+raw_dir: ./data/raw
+processed_dir: ./data/processed
+
+# 爬虫配置
+max_retries: 3
+concurrency: 5
+user_agent: "GameBeliever Crawler/0.1.0"
+
+# 缓存配置
+cache_enabled: true
+cache_dir: ./data/cache
+cache_ttl: 3600

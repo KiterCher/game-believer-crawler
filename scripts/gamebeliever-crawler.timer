@@ -1,0 +1,9 @@
+[Unit]
+Description=GameBeliever Crawler Daily Update Timer
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

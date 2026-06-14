@@ -1,0 +1,14 @@
+[Unit]
+Description=GameBeliever Crawler Auto Update
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/path/to/GameBeliever-crawler
+ExecStart=/usr/bin/python3 scripts/schedule.py
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
