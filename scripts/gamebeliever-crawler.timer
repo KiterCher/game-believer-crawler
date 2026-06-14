@@ -1,8 +1,9 @@
 [Unit]
-Description=GameBeliever Crawler Daily Update Timer
+Description=GameBeliever Crawler Update Timer
 
 [Timer]
-OnCalendar=*-*-* 02:00:00
+OnBootSec=5min
+OnUnitActiveSec=5min
 Persistent=true
 
 [Install]

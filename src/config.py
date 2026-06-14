@@ -9,27 +9,35 @@ from loguru import logger
 from pydantic import BaseModel
 
 
-class DataSourceConfig(BaseModel):
-    """数据源配置"""
+class SiteConfig(BaseModel):
+    """网站配置"""
 
     name: str
     base_url: str
     enabled: bool = True
     rate_limit: float = 1.0  # 请求间隔（秒）
     timeout: int = 30
+    crawl_types: list[str] = ["characters", "lightcones", "relics"]  # 爬取类型
+
+
+class ScheduleConfig(BaseModel):
+    """定时任务配置"""
+
+    interval_minutes: int = 5
+    enabled: bool = True
 
 
 class CrawlerConfig(BaseModel):
     """爬虫配置"""
 
-    # 数据源
-    sources: dict[str, DataSourceConfig] = {}
+    # 网站配置（支持多个网站）
+    sites: dict[str, SiteConfig] = {}
 
     # 输出配置
     output_dir: str = "../GameBeliever-web/src/data"
+    images_dir: str = "../GameBeliever-web/public/images"
     raw_dir: str = "./data/raw"
     processed_dir: str = "./data/processed"
-    images_dir: str = "./data/images"
 
     # 爬虫配置
     max_retries: int = 3
@@ -41,19 +49,26 @@ class CrawlerConfig(BaseModel):
     cache_dir: str = "./data/cache"
     cache_ttl: int = 3600  # 1小时
 
+    # 定时任务配置
+    schedule: ScheduleConfig = ScheduleConfig()
+
+    def get_enabled_sites(self) -> dict[str, SiteConfig]:
+        """获取所有启用的网站"""
+        return {name: site for name, site in self.sites.items() if site.enabled}
+
+    def get_site_config(self, site_name: str) -> Optional[SiteConfig]:
+        """获取指定网站配置"""
+        return self.sites.get(site_name)
+
 
 # 默认配置
 DEFAULT_CONFIG = CrawlerConfig(
-    sources={
-        "prydwen": DataSourceConfig(
+    sites={
+        "prydwen": SiteConfig(
             name="prydwen",
             base_url="https://prydwen.gg/star-rail",
             rate_limit=1.0,
-        ),
-        "game8": DataSourceConfig(
-            name="game8",
-            base_url="https://game8.co/games/Honkai-Star-Rail",
-            rate_limit=2.0,
+            crawl_types=["characters", "lightcones", "relics"],
         ),
     }
 )
@@ -69,10 +84,28 @@ def load_config(config_path: Optional[str] = None) -> CrawlerConfig:
     Returns:
         CrawlerConfig: 配置对象
     """
-    if config_path and Path(config_path).exists():
+    # 默认配置文件路径
+    if config_path is None:
+        config_path = "config/settings.yaml"
+
+    config_file = Path(config_path)
+
+    if config_file.exists():
         try:
-            with open(config_path, "r", encoding="utf-8") as f:
+            with open(config_file, "r", encoding="utf-8") as f:
                 config_data = yaml.safe_load(f)
+
+            # 转换 sites 配置
+            if "sites" in config_data:
+                sites = {}
+                for name, site_data in config_data["sites"].items():
+                    if isinstance(site_data, dict):
+                        sites[name] = SiteConfig(**site_data)
+                config_data["sites"] = sites
+
+            # 转换 schedule 配置
+            if "schedule" in config_data and isinstance(config_data["schedule"], dict):
+                config_data["schedule"] = ScheduleConfig(**config_data["schedule"])
 
             logger.info(f"Config loaded from: {config_path}")
             return CrawlerConfig(**config_data)

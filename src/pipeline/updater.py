@@ -24,16 +24,20 @@ class AutoUpdater:
 
     async def start(self):
         """启动更新器"""
-        source_config = self.config.sources.get("prydwen")
-        if not source_config:
-            logger.error("Prydwen source not configured")
+        # 获取第一个启用的网站配置
+        enabled_sites = self.config.get_enabled_sites()
+        if not enabled_sites:
+            logger.error("No enabled sites configured")
             return
 
-        self.crawler = PrydwenCrawler(self.config, source_config)
+        site_name = list(enabled_sites.keys())[0]
+        site_config = enabled_sites[site_name]
+
+        self.crawler = PrydwenCrawler(self.config, site_config)
         self.sync = DataSync(
             crawler_data_dir=self.config.processed_dir,
             web_data_dir=self.config.output_dir,
-            web_images_dir=f"{self.config.output_dir}/../public/images",
+            web_images_dir=self.config.images_dir,
         )
 
         await self.crawler.start()

@@ -1,23 +1,34 @@
 # GameBeliever Crawler 配置文件
 
-# 数据源配置
-sources:
+# 爬取网站配置
+# 可以添加多个网站，每个网站需要实现 BaseCrawler 接口
+sites:
   prydwen:
     name: prydwen
     base_url: https://prydwen.gg/star-rail
     enabled: true
     rate_limit: 1.0
     timeout: 30
+    # 爬取类型配置
+    crawl_types:
+      - characters
+      - lightcones
+      - relics
 
-  game8:
-    name: game8
-    base_url: https://game8.co/games/Honkai-Star-Rail
-    enabled: true
-    rate_limit: 2.0
-    timeout: 30
+  # 示例：添加其他网站
+  # game8:
+  #   name: game8
+  #   base_url: https://game8.co/games/Honkai-Star-Rail
+  #   enabled: false
+  #   rate_limit: 2.0
+  #   timeout: 30
+  #   crawl_types:
+  #     - characters
+  #     - guides
 
 # 输出配置
 output_dir: ../GameBeliever-web/src/data
+images_dir: ../GameBeliever-web/public/images
 raw_dir: ./data/raw
 processed_dir: ./data/processed
 
@@ -30,3 +41,8 @@ user_agent: "GameBeliever Crawler/0.1.0"
 cache_enabled: true
 cache_dir: ./data/cache
 cache_ttl: 3600
+
+# 定时任务配置
+schedule:
+  interval_minutes: 5
+  enabled: true

@@ -24,10 +24,10 @@ def cli():
     help="Data type to crawl",
 )
 @click.option("--slug", default=None, help="Specific item slug to crawl")
-@click.option("--source", default="prydwen", help="Data source to use")
+@click.option("--site", default="prydwen", help="Site to crawl from")
 @click.option("--output", default=None, help="Output directory")
 @click.option("--cache/--no-cache", default=True, help="Enable/disable cache")
-def crawl(data_type: str, slug: str, source: str, output: str, cache: bool):
+def crawl(data_type: str, slug: str, site: str, output: str, cache: bool):
     """爬取数据"""
     import asyncio
     from .crawler.prydwen import PrydwenCrawler
@@ -35,17 +35,25 @@ def crawl(data_type: str, slug: str, source: str, output: str, cache: bool):
     setup_logger(level="INFO")
     config = load_config()
 
-    logger.info(f"Crawling {data_type} from {source}...")
+    logger.info(f"Crawling {data_type} from {site}...")
 
     async def run_crawl():
-        # 获取数据源配置
-        source_config = config.sources.get(source)
-        if not source_config:
-            logger.error(f"Unknown source: {source}")
+        # 获取网站配置
+        site_config = config.get_site_config(site)
+        if not site_config:
+            logger.error(f"Unknown site: {site}")
+            click.echo(f"[ERROR] Unknown site: {site}")
+            click.echo(f"Available sites: {', '.join(config.sites.keys())}")
+            return
+
+        # 检查是否启用
+        if not site_config.enabled:
+            logger.warning(f"Site {site} is disabled")
+            click.echo(f"[WARNING] Site {site} is disabled")
             return
 
         # 创建爬虫
-        crawler = PrydwenCrawler(config, source_config)
+        crawler = PrydwenCrawler(config, site_config)
 
         try:
             await crawler.start()
@@ -242,14 +250,20 @@ def info():
 
     click.echo("[INFO] Configuration Info:")
     click.echo(f"   Output Dir: {config.output_dir}")
+    click.echo(f"   Images Dir: {config.images_dir}")
     click.echo(f"   Cache Dir: {config.cache_dir}")
     click.echo(f"   Cache TTL: {config.cache_ttl}s")
     click.echo(f"   Max Retries: {config.max_retries}")
     click.echo(f"   Concurrency: {config.concurrency}")
-    click.echo(f"\n[INFO] Data Sources:")
-    for name, source in config.sources.items():
-        status = "[OK]" if source.enabled else "[OFF]"
-        click.echo(f"   {status} {name}: {source.base_url}")
+    click.echo(f"\n[INFO] Schedule:")
+    click.echo(f"   Interval: {config.schedule.interval_minutes} minutes")
+    click.echo(f"   Enabled: {config.schedule.enabled}")
+    click.echo(f"\n[INFO] Sites:")
+    for name, site in config.sites.items():
+        status = "[OK]" if site.enabled else "[OFF]"
+        crawl_types = ", ".join(site.crawl_types)
+        click.echo(f"   {status} {name}: {site.base_url}")
+        click.echo(f"      Crawl types: {crawl_types}")
 
 
 @cli.command()
@@ -299,7 +313,7 @@ def sync(characters: bool, lightcones: bool, images: bool):
     syncer = DataSync(
         crawler_data_dir=config.processed_dir,
         web_data_dir=config.output_dir,
-        web_images_dir=f"{config.output_dir}/../public/images",
+        web_images_dir=config.images_dir,
     )
 
     if characters:
@@ -332,7 +346,7 @@ def status():
     syncer = DataSync(
         crawler_data_dir=config.processed_dir,
         web_data_dir=config.output_dir,
-        web_images_dir=f"{config.output_dir}/../public/images",
+        web_images_dir=config.images_dir,
     )
 
     status = syncer.get_sync_status()

@@ -15,8 +15,8 @@ echo "Python path: $PYTHON_PATH"
 # 创建日志目录
 mkdir -p "$PROJECT_DIR/logs"
 
-# 创建 cron 任务
-CRON_CMD="0 2 * * * cd $PROJECT_DIR && $PYTHON_PATH scripts/schedule.py >> logs/cron.log 2>&1"
+# 创建 cron 任务（每 5 分钟执行一次）
+CRON_CMD="*/5 * * * * cd $PROJECT_DIR && $PYTHON_PATH scripts/schedule.py >> logs/cron.log 2>&1"
 
 # 检查是否已存在 cron 任务
 if crontab -l 2>/dev/null | grep -q "schedule.py"; then
@@ -29,7 +29,7 @@ fi
 
 echo "Cron job installed successfully!"
 echo ""
-echo "Schedule: Every day at 2:00 AM"
+echo "Schedule: Every 5 minutes"
 echo "Log file: $PROJECT_DIR/logs/cron.log"
 echo ""
 echo "To verify: crontab -l"
